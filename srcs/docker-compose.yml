@@ -1,0 +1,77 @@
+version: "3"
+
+services:
+    nginx:
+        build:
+            context: requirements/nginx
+            args:
+                - ALPINE_VERSION
+        container_name: nginx
+        hostname: nginx
+        depends_on:
+            - wordpress
+        restart: always
+        ports:
+            - "443:443"
+        networks:
+            - skynet
+        volumes:
+            - WordPress:/var/www/html/wordpress/
+
+    wordpress:
+        build:
+            context: requirements/wordpress
+            args:
+                - ALPINE_VERSION
+                - WORDPRESS_DB_USER
+                - WORDPRESS_DB_PASSWORD
+                - WORDPRESS_DB_HOST
+                - WORDPRESS_DB_NAME
+        container_name: wordpress
+        hostname: wordpress
+        depends_on:
+            - mariadb
+        restart: always
+        networks:
+            - skynet
+        expose:
+            - "9000"
+        volumes:
+            - WordPress:/var/www/html/wordpress/
+
+    mariadb:
+        build:
+            context: requirements/mariadb
+            args:
+                - ALPINE_VERSION
+                - MYSQL_USER
+                - MYSQL_PASSWORD
+                - MYSQL_DATABASE
+                - MYSQL_ROOT_PASSWORD
+        container_name: mariadb
+        hostname: mariadb
+        restart: always
+        networks:
+            - skynet
+        expose:
+            - "3306"
+        volumes:
+            - DB:/var/lib/mysql
+
+networks:
+    skynet:
+        driver: bridge
+
+volumes:
+    DB:
+        driver: local
+        driver_opts:
+            o: bind
+            type: none
+            device: $DOCKER_DATA/db
+    WordPress:
+        driver: local
+        driver_opts:
+            o: bind
+            type: none
+            device: $DOCKER_DATA/wordpress
